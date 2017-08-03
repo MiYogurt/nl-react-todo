@@ -5,87 +5,85 @@ const logo = require('./logo.svg');
 import Input from './components/input';
 import List, { ItemType } from './components/list';
 
-interface States {
+import * as actions from './actions/';
+import { StoreState } from './types';
+import { connect, Dispatch } from 'react-redux';
+
+interface Props {
   todos: Array<ItemType>;
-  editIndex: number | boolean;
+  index: number;
+  onAddTodo: (todo: ItemType) => void;
+  onDeleteTodo: (index: number) => void;
+  onEditTodo: (todo: ItemType) => void;
+  onEditIndex: (index: number) => void;
 }
 
-class App extends React.Component<{}, States> {
-  InputText: HTMLInputElement;
-  constructor(props: {}) {
-    super(props);
-    this.state = {
-      todos: [{ index: 1, text: 'test' }],
-      editIndex: false,
-    };
-  }
+export function mapStateToProps({ todos, editIndex }: StoreState) {
+  return {
+    todos,
+    index: editIndex,
+  };
+}
 
-  handleAdd() {
-    const value = this.InputText.value;
+export function mapDispatchToProps(dispatch: Dispatch<actions.IsInAction>) {
+  return {
+    onAddTodo: (todo: ItemType) => dispatch(actions.AddTodo(todo)),
+    onDeleteTodo: (index: number) => dispatch(actions.DeleteTodo(index)),
+    onEditTodo: (todo: ItemType) => dispatch(actions.EditTodo(todo)),
+    onEditIndex: (index: number) => dispatch(actions.EditIndex(index)),
+  };
+}
 
-    if (this.state.editIndex) {
-      const editTodo = this.state.todos.find(todo => todo.index === this.state.editIndex);
-      if (!editTodo) { return; }
-      editTodo.text = value;
-      this.setState({
-        todos: this.state.todos
+function App(props: Props) {
+  let InputText: HTMLInputElement;
+
+  function handleAdd() {
+    const value = InputText.value;
+
+    if (props.index) {
+      props.onEditTodo({
+        index: props.index,
+        text: value,
       });
-      this.InputText.value = '';
+      InputText.value = '';
       return;
     }
 
-    const index = this.state.todos.length + 40;
-
-    this.setState({
-      todos: [...this.state.todos, { text: value, index }]
+    props.onAddTodo({
+      index: Math.round(Math.random() * 1000),
+      text: value,
     });
 
-    this.InputText.value = '';
+    InputText.value = '';
   }
 
-  handleDel(index: number) {
-    const delIndex = this.state.todos.findIndex(todo => todo.index === index);
-    const todos = this.state.todos;
-    todos.splice(delIndex, 1);
-    if (this.state.editIndex !== index) {
-      this.setState({
-        todos,
-      });
-      return ;
-    }
-    this.setState({
-      todos,
-      editIndex: false
-    });
-    this.InputText.value = '';
-    return ;
+  function handleDel(index: number) {
+    props.onDeleteTodo(index);
+    InputText.value = '';
+    return;
   }
 
-  handleEdit(todo: ItemType) {
-    this.InputText.value = todo.text;
-    this.setState({
-      editIndex: todo.index
-    });
+  function handleEdit(todo: ItemType) {
+    InputText.value = todo.text;
+    props.onEditIndex(todo.index);
   }
 
-  render() {
-    return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
-        </div>
-        <div className="container">
-          <Input inputRef={input => this.InputText = input} submit={() => this.handleAdd()} />
-          <List
-            del={(index: number) => this.handleDel(index)}
-            edit={(todo: ItemType) => this.handleEdit(todo)}
-            todos={this.state.todos}
-          />
-        </div>
+  return (
+    <div className="App">
+      <div className="App-header">
+        <img src={logo} className="App-logo" alt="logo" />
+        <h2>Welcome to React</h2>
       </div>
-    );
-  }
+      <div className="container">
+        <Input inputRef={input => InputText = input} submit={() => handleAdd()} />
+        <List
+          del={(index: number) => handleDel(index)}
+          edit={(todo: ItemType) => handleEdit(todo)}
+          todos={props.todos}
+        />
+      </div>
+    </div>
+  );
 }
 
-export default App;
+export default connect(mapStateToProps, mapDispatchToProps)(App);

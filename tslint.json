@@ -1,5 +1,6 @@
 {
     "extends": ["tslint-react"],
+    "exclude": ["node_modules"],
     "rules": {
         "align": [
             true,
